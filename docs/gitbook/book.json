@@ -1,0 +1,12 @@
+{
+  "root": ".",
+  "title": "OpenCode 可靠性分析",
+  "description": "从 GitHub PR 和 Issue 视角分析 OpenCode 现状与问题",
+  "author": "OpenCode Team",
+  "language": "zh-hans",
+  "links": {
+    "sidebar": {
+      "GitHub": "https://github.com/anomalyco/opencode"
+    }
+  }
+}

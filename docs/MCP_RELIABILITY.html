@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCode MCP/Skill 可靠性分析</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        header h1 { font-size: 2em; margin-bottom: 10px; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card h2 { color: #0f2027; border-bottom: 3px solid #0f2027; padding-bottom: 10px; margin-bottom: 20px; }
+        .card h3 { color: #203a43; margin: 20px 0 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #0f2027; color: white; }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .badge-high { background: #e74c3c; color: white; }
+        .badge-medium { background: #f39c12; color: white; }
+        .badge-low { background: #27ae60; color: white; }
+        
+        .risk { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 10px 0; }
+        .safe { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 10px 0; }
+        .info { background: #e8f4fd; border-left: 4px solid #2196F3; padding: 15px; margin: 10px 0; }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .feature-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        footer { text-align: center; padding: 20px; color: #666; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔌 OpenCode MCP/Skill 可靠性分析</h1>
+        <p>MCP 服务扩展的稳定性、保障机制与风险</p>
+    </header>
+
+    <div class="container">
+        <!-- MCP 已知问题 -->
+        <div class="card">
+            <h2>⚠️ MCP 已知问题 (from GitHub Issues)</h2>
+            
+            <table>
+                <tr>
+                    <th>Issue</th>
+                    <th>问题描述</th>
+                    <th>严重程度</th>
+                </tr>
+                <tr>
+                    <td>#15546</td>
+                    <td>远程 OAuth MCP 服务器首次连接失败 "No OAuth state saved"</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#7261</td>
+                    <td>MCP 孤儿进程未清理，导致资源泄漏</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#9425</td>
+                    <td>远程 MCP 显示 "connected" 但工具未注册，默默失败</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#3273</td>
+                    <td>MCP 客户端失败导致 opencode 挂起</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#6909</td>
+                    <td>MCP 服务器 "Operation timed out after 5000ms"</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#8682</td>
+                    <td>配置的 MCP 无法使用，无错误日志</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#8990</td>
+                    <td>MCP 服务器显示 "disabled" 但配置正常</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#13900</td>
+                    <td>GLM-5 MCP 工具 JSON 格式错误</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 现有可靠性机制 -->
+        <div class="card">
+            <h2>✅ 现有可靠性机制</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3>超时控制</h3>
+                    <p><code>withTimeout()</code> + <code>DEFAULT_TIMEOUT</code></p>
+                    <small>防止 MCP 调用无限等待</small>
+                </div>
+                <div class="feature-item">
+                    <h3>错误日志</h3>
+                    <p><code>log.error()</code> 记录失败详情</p>
+                    <small>便于调试和问题定位</small>
+                </div>
+                <div class="feature-item">
+                    <h3>状态追踪</h3>
+                    <p>记录 <code>status: failed/connected/needs_auth</code></p>
+                    <small>显示服务器连接状态</small>
+                </div>
+                <div class="feature-item">
+                    <h3>OAuth 支持</h3>
+                    <p>支持远程 MCP OAuth 认证</p>
+                    <small>OAuth callback 处理</small>
+                </div>
+            </div>
+            
+            <div class="info">
+                <strong>代码位置:</strong> <code>packages/opencode/src/mcp/index.ts</code>
+            </div>
+        </div>
+
+        <!-- 可靠性缺口 -->
+        <div class="card">
+            <h2>❌ 可靠性缺口 (待完善)</h2>
+            
+            <table>
+                <tr>
+                    <th>功能</th>
+                    <th>当前状态</th>
+                    <th>风险</th>
+                </tr>
+                <tr>
+                    <td>孤儿进程清理</td>
+                    <td>❌ 不完善</td>
+                    <td>CI 环境下资源耗尽</td>
+                </tr>
+                <tr>
+                    <td>自动重连</td>
+                    <td>❌ 不支持</td>
+                    <td>MCP 断开后无法恢复</td>
+                </tr>
+                <tr>
+                    <td>失败隔离</td>
+                    <td>❌ MCP 失败会挂起整个 opencode</td>
+                    <td>单点故障影响全局</td>
+                </tr>
+                <tr>
+                    <td>健康检查</td>
+                    <td>⚠️ 基础</td>
+                    <td>只检查连接状态，不检查工具</td>
+                </tr>
+                <tr>
+                    <td>重试机制</td>
+                    <td>❌ 不支持</td>
+                    <td>临时故障无法自动恢复</td>
+                </tr>
+                <tr>
+                    <td>fallback</td>
+                    <td>❌ 不支持</td>
+                    <td>MCP 不可用时无替代方案</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Skill 系统 -->
+        <div class="card">
+            <h2>🔧 Skill 系统分析</h2>
+            
+            <div class="info">
+                <p>当前代码中未发现独立的 <code>skill</code> 模块。MCP 是主要的扩展机制。</p>
+            </div>
+            
+            <h3>扩展方式</h3>
+            <table>
+                <tr>
+                    <th>类型</th>
+                    <th>说明</th>
+                    <th>可靠性</th>
+                </tr>
+                <tr>
+                    <td>MCP (Local)</td>
+                    <td>本地进程 stdio 通信</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>MCP (Remote)</td>
+                    <td>HTTP/SSE 连接</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>MCP (OAuth)</td>
+                    <td>需要认证的远程服务</td>
+                    <td><span class="badge badge-high">高风险</span></td>
+                </tr>
+                <tr>
+                    <td>Plugin (npm)</td>
+                    <td>JS/TS 插件</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 可靠性建议 -->
+        <div class="card">
+            <h2>💡 MCP 可靠性提升建议</h2>
+            
+            <h3>短期 (1-2 周)</h3>
+            <div class="risk">
+                <ol>
+                    <li><strong>进程清理</strong> - 实现 MCP 子进程生命周期管理，退出时强制 kill</li>
+                    <li><strong>失败隔离</strong> - MCP 失败不应挂起主进程，使用 try-catch 包裹</li>
+                    <li><strong>超时配置</strong> - 增加 <code>mcp.timeout</code> 配置项，允许用户调整</li>
+                </ol>
+            </div>
+            
+            <h3>中期 (1-2 月)</h3>
+            <div class="info">
+                <ol>
+                    <li><strong>自动重连</strong> - MCP 断开后自动尝试重连 (3 次)</li>
+                    <li><strong>健康检查</strong> - 定期检查 MCP 工具可用性</li>
+                    <li><strong>详细日志</strong> - 增加 MCP 连接、工具调用的详细日志</li>
+                </ol>
+            </div>
+            
+            <h3>长期 (季度)</h3>
+            <div class="safe">
+                <ol>
+                    <li><strong>Fallback 机制</strong> - MCP 不可用时使用本地工具替代</li>
+                    <li><strong>熔断器</strong> - 连续失败后暂停 MCP 调用</li>
+                    <li><strong>监控告警</strong> - MCP 失败率监控和告警</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- E2E 场景建议 -->
+        <div class="card">
+            <h2>🎯 你的场景可靠性配置建议</h2>
+            
+            <div class="info">
+                <strong>针对: Windows/Linux + GitHub CI/CD + MCP</strong>
+            </div>
+            
+            <h3>推荐做法</h3>
+            <ol>
+                <li><strong>避免生产环境使用 MCP</strong> - CI/CD 环境中 MCP 稳定性较差</li>
+                <li><strong>本地 MCP 添加超时</strong>:
+                    <pre><code>{
+  "mcp": {
+    "my-server": {
+      "type": "local",
+      "command": ["python", "mcp-server.py"],
+      "timeout": 30000
+    }
+  }
+}</code></pre>
+                </li>
+                <li><strong>监控资源使用</strong> - 定期检查子进程数量</li>
+                <li><strong>设置内存限制</strong> - CI job 添加内存限制</li>
+                <li><strong>日志级别</strong> - 使用 <code>--log-level DEBUG</code> 排查问题</li>
+            </ol>
+            
+            <h3>不推荐</h3>
+            <div class="risk">
+                <ul>
+                    <li>❌ 在 CI 环境中依赖关键业务的 MCP 服务</li>
+                    <li>❌ 使用需要 OAuth 的远程 MCP</li>
+                    <li>❌ 长时间运行的 MCP 会话</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 总结 -->
+        <div class="card">
+            <h2>📝 总结</h2>
+            
+            <table>
+                <tr>
+                    <th>维度</th>
+                    <th>评分</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>功能完整性</td>
+                    <td>⭐⭐⭐⭐⭐</td>
+                    <td>支持 local/remote/OAuth 三种 MCP</td>
+                </tr>
+                <tr>
+                    <td>错误处理</td>
+                    <td>⭐⭐</td>
+                    <td>失败会挂起主进程，无重连</td>
+                </tr>
+                <tr>
+                    <td>资源管理</td>
+                    <td>⭐⭐</td>
+                    <td>孤儿进程问题突出</td>
+                </tr>
+                <tr>
+                    <td>可观测性</td>
+                    <td>⭐⭐⭐</td>
+                    <td>有基础日志，缺少详细指标</td>
+                </tr>
+                <tr>
+                    <td>生产可用性</td>
+                    <td>⭐⭐</td>
+                    <td>建议开发/测试使用，生产谨慎</td>
+                </tr>
+            </table>
+        </div>
+
+        <footer>
+            <p>📅 分析日期: 2026-03-03</p>
+            <p>📊 数据来源: GitHub Issues + 代码分析</p>
+        </footer>
+    </div>
+</body>
+</html>

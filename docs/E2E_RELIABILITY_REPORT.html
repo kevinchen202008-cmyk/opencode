@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCode E2E 可靠性分析报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        header h1 { font-size: 2.2em; margin-bottom: 10px; }
+        header p { font-size: 1.1em; opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card h2 { color: #1a1a2e; border-bottom: 3px solid #1a1a2e; padding-bottom: 10px; margin-bottom: 20px; }
+        .card h3 { color: #16213e; margin: 20px 0 10px; }
+        
+        .architecture {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .arch-box {
+            background: #f8f9fa;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #ddd;
+        }
+        .arch-box.highlight { border-color: #e74c3c; background: #fff5f5; }
+        .arch-box.good { border-color: #27ae60; background: #f0fff4; }
+        .arch-box.warning { border-color: #f39c12; background: #fffbf0; }
+        
+        .flow-arrow { font-size: 1.5em; color: #666; align-self: center; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #1a1a2e; color: white; }
+        tr:hover { background: #f5f5f5; }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .badge-high { background: #e74c3c; color: white; }
+        .badge-medium { background: #f39c12; color: white; }
+        .badge-low { background: #27ae60; color: white; }
+        
+        .risk { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 10px 0; }
+        .safe { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 10px 0; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-item strong { display: block; font-size: 1.8em; }
+        
+        footer { text-align: center; padding: 20px; color: #666; margin-top: 30px; }
+        
+        .recommendation {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔍 OpenCode E2E 可靠性分析报告</h1>
+        <p>用户场景：Windows/Linux 执行机 + GitHub CI/CD + GLM Provider + CLI/VSCode</p>
+    </header>
+
+    <div class="container">
+        <!-- 用户架构图 -->
+        <div class="card">
+            <h2>📐 用户部署架构</h2>
+            <div class="architecture">
+                <div class="arch-box">
+                    <strong>GitHub</strong>
+                    <small>CI/CD Trigger</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="arch-box warning">
+                    <strong>Windows/Linux</strong>
+                    <small>执行机</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="arch-box highlight">
+                    <strong>OpenCode</strong>
+                    <small>Agent</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="arch-box">
+                    <strong>GLM</strong>
+                    <small>LLM API</small>
+                </div>
+                <div class="flow-arrow">↺</div>
+                <div class="arch-box good">
+                    <strong>VSCode</strong>
+                    <small>IDE</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 各环节分析 -->
+        <div class="card">
+            <h2>🔍 各环节可靠性分析</h2>
+
+            <h3>1. Windows/Linux 执行机</h3>
+            <table>
+                <tr>
+                    <th>问题类型</th>
+                    <th>严重程度</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>启动慢</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                    <td>#14965, #7979 报告启动加载慢</td>
+                </tr>
+                <tr>
+                    <td>内存问题</td>
+                    <td><span class="badge badge-high">高</span></td>
+                    <td>内存泄漏 70GB+，OOM kill</td>
+                </tr>
+                <tr>
+                    <td>Keybinds</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                    <td>#4997 Windows 键盘绑定问题</td>
+                </tr>
+                <tr>
+                    <td>TUI 冻结</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                    <td>opentui 在 Windows 上随机冻结</td>
+                </tr>
+            </table>
+
+            <h3>2. GitHub CI/CD</h3>
+            <table>
+                <tr>
+                    <th>功能</th>
+                    <th>状态</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>Issue 触发</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                    <td>核心功能，成熟稳定</td>
+                </tr>
+                <tr>
+                    <td>PR 审查</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                    <td>支持 PR 评论触发</td>
+                </tr>
+                <tr>
+                    <td>定时任务</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                    <td>schedule workflow 支持</td>
+                </tr>
+                <tr>
+                    <td>OIDC 认证</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                    <td>支持 AWS OIDC</td>
+                </tr>
+            </table>
+
+            <h3>3. GLM Provider</h3>
+            <table>
+                <tr>
+                    <th>Issue</th>
+                    <th>问题</th>
+                    <th>严重程度</th>
+                </tr>
+                <tr>
+                    <td>#15782</td>
+                    <td>GLM-5 reasoning 停止</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#10731</td>
+                    <td>GLM-4.7 解析问题</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#13900</td>
+                    <td>GLM-5 MCP 工具 JSON 格式错误</td>
+                    <td><span class="badge badge-high">高</span></td>
+                </tr>
+                <tr>
+                    <td>#13310</td>
+                    <td>GLM-4.7 无法读取图片</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#11943</td>
+                    <td>GLM-4.7 卡在 plan 模式</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+            </table>
+
+            <h3>4. CLI 模式</h3>
+            <table>
+                <tr>
+                    <th>功能</th>
+                    <th>状态</th>
+                </tr>
+                <tr>
+                    <td>核心对话</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                </tr>
+                <tr>
+                    <td>Tool 执行</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                </tr>
+                <tr>
+                    <td>文件操作</td>
+                    <td><span class="badge badge-low">稳定</span></td>
+                </tr>
+                <tr>
+                    <td>LSP 支持</td>
+                    <td><span class="badge badge-medium">中等</span></td>
+                </tr>
+            </table>
+
+            <h3>5. VSCode 插件</h3>
+            <table>
+                <tr>
+                    <th>Issue</th>
+                    <th>问题</th>
+                    <th>严重程度</th>
+                </tr>
+                <tr>
+                    <td>#15426</td>
+                    <td>输出格式混乱</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#15643</td>
+                    <td>Activate.ps1 导致退出</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#11115</td>
+                    <td>滚动严重延迟</td>
+                    <td><span class="badge badge-medium">中</span></td>
+                </tr>
+                <tr>
+                    <td>#14810</td>
+                    <td>shift+enter 键位问题</td>
+                    <td><span class="badge badge-low">低</span></td>
+                </tr>
+                <tr>
+                    <td>#15461</td>
+                    <td>文件路径格式错误</td>
+                    <td><span class="badge badge-low">低</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- E2E 风险评估 -->
+        <div class="card">
+            <h2>⚠️ E2E 可靠性风险</h2>
+            
+            <div class="risk">
+                <strong>🔴 高风险点</strong>
+                <ul>
+                    <li><strong>GLM 模型稳定性</strong> - 多起 tool call JSON 格式错误、reasoning 停止、plan 模式卡死</li>
+                    <li><strong>Windows 内存问题</strong> - 长时间运行可能导致 OOM，尤其在 CI 环境中</li>
+                    <li><strong>执行机资源泄漏</strong> - 孤儿进程未清理，可能耗尽 CI 执行机资源</li>
+                </ul>
+            </div>
+
+            <div class="risk">
+                <strong>🟠 中风险点</strong>
+                <ul>
+                    <li><strong>GLM 多模态</strong> - 图片读取功能不完整</li>
+                    <li><strong>VSCode 插件</strong> - Windows 上有兼容性问题，输出格式异常</li>
+                    <li><strong>启动性能</strong> - CI 环境下每次启动都需要等待</li>
+                </ul>
+            </div>
+
+            <div class="safe">
+                <strong>✅ 稳定点</strong>
+                <ul>
+                    <li><strong>GitHub CI/CD</strong> - 核心触发机制成熟稳定</li>
+                    <li><strong>CLI 核心功能</strong> - 对话、工具执行基本稳定</li>
+                    <li><strong>网络请求</strong> - 与 GLM API 通信相对稳定</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 可靠性评分 -->
+        <div class="card">
+            <h2>📊 E2E 可靠性评分</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <strong style="color:#f39c12">⭐⭐⭐</strong>
+                    <span>执行机 (Win/Linux)</span>
+                </div>
+                <div class="summary-item">
+                    <strong style="color:#27ae60">⭐⭐⭐⭐⭐</strong>
+                    <span>GitHub CI/CD</span>
+                </div>
+                <div class="summary-item">
+                    <strong style="color:#e74c3c">⭐⭐</strong>
+                    <span>GLM Provider</span>
+                </div>
+                <div class="summary-item">
+                    <strong style="color:#27ae60">⭐⭐⭐⭐</strong>
+                    <span>CLI 模式</span>
+                </div>
+                <div class="summary-item">
+                    <strong style="color:#f39c12">⭐⭐⭐</strong>
+                    <span>VSCode 插件</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 部署建议 -->
+        <div class="card">
+            <h2>💡 可靠性提升建议</h2>
+
+            <div class="recommendation">
+                <strong>针对 GLM Provider</strong>
+                <ol>
+                    <li>考虑添加 fallback provider (如 OpenAI/Anthropic)</li>
+                    <li>实现重试机制处理 JSON 解析失败</li>
+                    <li>监控 tool call 错误率</li>
+                    <li>避免在关键 CI 流程中使用 GLM-5 的 MCP 功能</li>
+                </ol>
+            </div>
+
+            <div class="recommendation">
+                <strong>针对 Windows/Linux 执行机</strong>
+                <ol>
+                    <li>为 CI 环境设置内存限制 (如 4GB)</li>
+                    <li>实现健康检查和自动重启</li>
+                    <li>使用 Docker 容器隔离执行环境</li>
+                    <li>监控进程数量，防止孤儿进程累积</li>
+                </ol>
+            </div>
+
+            <div class="recommendation">
+                <strong>针对 VSCode 插件</strong>
+                <ol>
+                    <li>生产环境优先使用 CLI 模式</li>
+                    <li>Windows 上注意虚拟环境激活脚本问题</li>
+                    <li>关注插件版本更新</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 总结 -->
+        <div class="card">
+            <h2>📝 总结</h2>
+            <p>基于用户场景的 E2E 可靠性评估：</p>
+            <ul>
+                <li><strong>GitHub CI/CD</strong> ✅ 最稳定环节</li>
+                <li><strong>CLI 模式</strong> ✅ 基本可用，推荐生产使用</li>
+                <li><strong>GLM Provider</strong> ⚠️ 需要额外监控和 fallback</li>
+                <li><strong>Windows 执行机</strong> ⚠️ 需关注内存和进程管理</li>
+                <li><strong>VSCode 插件</strong> ⚠️ 建议用于开发，生产用 CLI</li>
+            </ul>
+            <p style="margin-top:15px; padding:15px; background:#fff3cd; border-radius:8px;">
+                <strong>推荐配置：</strong> Linux 执行机 + GitHub Actions + CLI + (GLM + OpenAI fallback)
+            </p>
+        </div>
+
+        <footer>
+            <p>📅 分析日期: 2026-03-03</p>
+            <p>📊 数据来源: GitHub anomalyco/opencode Issues & PRs</p>
+        </footer>
+    </div>
+</body>
+</html>

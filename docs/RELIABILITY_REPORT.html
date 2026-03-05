@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCode 可靠性分析报告</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            color: #764ba2;
+            margin: 20px 0 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .badge-critical { background: #e74c3c; color: white; }
+        .badge-performance { background: #f39c12; color: white; }
+        .badge-feature { background: #3498db; color: white; }
+        .badge-open { background: #e74c3c; color: white; }
+        .badge-closed { background: #27ae60; color: white; }
+        .badge-merged { background: #9b59b6; color: white; }
+        .pros {
+            background: #d4edda;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .cons {
+            background: #f8d7da;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .star-item {
+            text-align: center;
+        }
+        .star-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .star-label {
+            color: #666;
+        }
+        .rating {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .rating-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-width: 120px;
+        }
+        .rating-stars {
+            font-size: 1.5em;
+            color: #f39c12;
+        }
+        .rating-label {
+            margin-top: 5px;
+            color: #666;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-item strong {
+            display: block;
+            font-size: 1.5em;
+            color: #667eea;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            margin-top: 30px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔍 OpenCode 可靠性分析报告</h1>
+        <p>从 GitHub PR 和 Issue 视角分析 OpenCode 现状与问题</p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>📊 项目规模与活跃度</h2>
+            <div class="stars">
+                <div class="star-item">
+                    <div class="star-number">114k</div>
+                    <div class="star-label">Stars</div>
+                </div>
+                <div class="star-item">
+                    <div class="star-number">11.6k</div>
+                    <div class="star-label">Forks</div>
+                </div>
+                <div class="star-item">
+                    <div class="star-number">1,641</div>
+                    <div class="star-label">Open PRs</div>
+                </div>
+                <div class="star-item">
+                    <div class="star-number">4,545</div>
+                    <div class="star-label">Closed PRs</div>
+                </div>
+                <div class="star-item">
+                    <div class="star-number">4.5k</div>
+                    <div class="star-label">Issues</div>
+                </div>
+            </div>
+            <p style="text-align: center; color: #666;">📈 非常活跃，每日都有大量 PR 和 Issue 更新</p>
+        </div>
+
+        <div class="card">
+            <h2>⚠️ 可靠性问题分类</h2>
+
+            <h3>🔴 严重问题 (Critical)</h3>
+            <table>
+                <tr>
+                    <th>Issue</th>
+                    <th>描述</th>
+                    <th>状态</th>
+                </tr>
+                <tr>
+                    <td>#13230</td>
+                    <td>内存泄漏导致内核软锁定 (356s), OOM kill (111GB virt/21GB RSS)</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#15348</td>
+                    <td>无界堆增长 (37+ GB RSS) + 孤儿进程</td>
+                    <td><span class="badge badge-closed">Closed</span></td>
+                </tr>
+                <tr>
+                    <td>#15783</td>
+                    <td>Bun 崩溃</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#14707</td>
+                    <td>413 Request Entity Too Large 自动压缩恢复</td>
+                    <td><span class="badge badge-merged">Merged</span></td>
+                </tr>
+            </table>
+
+            <h3>🟠 性能问题 (Performance)</h3>
+            <table>
+                <tr>
+                    <th>Issue</th>
+                    <th>描述</th>
+                    <th>状态</th>
+                </tr>
+                <tr>
+                    <td>#5363</td>
+                    <td>内存消耗 70GB</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#14965</td>
+                    <td>启动慢</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#7979</td>
+                    <td>加载时间很长 (Windows)</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#12834</td>
+                    <td>TUI 随机冻结/挂起</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#15592</td>
+                    <td>PTY 句柄泄漏</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+                <tr>
+                    <td>#7261</td>
+                    <td>内存膨胀 + MCP 孤儿进程</td>
+                    <td><span class="badge badge-open">Open</span></td>
+                </tr>
+            </table>
+
+            <h3>🔵 功能性问题</h3>
+            <table>
+                <tr>
+                    <th>类别</th>
+                    <th>问题描述</th>
+                </tr>
+                <tr>
+                    <td>LSP</td>
+                    <td>LSP 服务器卡顿/需重启 (#5899)</td>
+                </tr>
+                <tr>
+                    <td>Provider</td>
+                    <td>GLM-5 reasoning 停止 (#15782), OpenAI 兼容性问题 (#13546)</td>
+                </tr>
+                <tr>
+                    <td>TUI</td>
+                    <td>鼠标选择不可靠 (#15760), 空白终端 (#15766)</td>
+                </tr>
+                <tr>
+                    <td>Streaming</td>
+                    <td>使用 separate reasoning_content 时在反引号处截断 (#15774)</td>
+                </tr>
+                <tr>
+                    <td>上下文</td>
+                    <td>接近上下文窗口时重复发送请求 (#15778)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>📈 稳定性评估</h2>
+
+            <h3>✅ 优点</h3>
+            <div class="pros">
+                <ul>
+                    <li><strong>活跃的开发</strong> - 大量 PR 被合并，问题修复及时</li>
+                    <li><strong>自动恢复机制</strong> - 实现了 413 错误自动压缩 (#14707)</li>
+                    <li><strong>社区参与</strong> - 有 contributor、Vouched 等标签，社区贡献活跃</li>
+                    <li><strong>版本迭代快</strong> - 持续有新功能和修复</li>
+                </ul>
+            </div>
+
+            <h3>⚠️ 风险</h3>
+            <div class="cons">
+                <ul>
+                    <li><strong>内存问题突出</strong> - 多次报告内存泄漏 (70GB, 37GB, 111GB)，孤儿进程未清理</li>
+                    <li><strong>TUI (opentui) 问题</strong> - v1.0 引入的新 TUI 有较多兼容性问题</li>
+                    <li><strong>启动性能</strong> - 启动慢是持续性问题</li>
+                    <li><strong>平台兼容性</strong> - Windows 问题较多，特定系统问题</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔒 安全性</h2>
+            <ul>
+                <li>✅ 无公开 security 标签问题</li>
+                <li>✅ 未发现明显安全漏洞报告</li>
+                <li>✅ GitHub 安全标签页存在，说明有安全团队关注</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>💡 可靠性改进建议</h2>
+
+            <h3>短期</h3>
+            <ol>
+                <li><strong>内存管理</strong> - 增加内存限制、监控、自动释放</li>
+                <li><strong>进程清理</strong> - 确保子进程 (LSP/MCP/PTY) 正确退出</li>
+                <li><strong>错误恢复</strong> - 参考 #14707 实现更多自动恢复</li>
+            </ol>
+
+            <h3>中期</h3>
+            <ol>
+                <li><strong>性能优化</strong> - 配置加载缓存、LSP 二进制缓存</li>
+                <li><strong>TUI 稳定性</strong> - 修复冻结、鼠标选择问题</li>
+                <li><strong>测试覆盖</strong> - 增加内存泄漏、进程泄漏检测</li>
+            </ol>
+
+            <h3>长期</h3>
+            <ol>
+                <li><strong>平台兼容性</strong> - 增加更多平台测试</li>
+                <li><strong>监控告警</strong> - 内存使用、进程数量监控</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2>📊 综合评分</h2>
+            <div class="rating">
+                <div class="rating-item">
+                    <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                    <div class="rating-label">功能完整性</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                    <div class="rating-label">社区活跃度</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-stars">⭐⭐⭐</div>
+                    <div class="rating-label">稳定性</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                    <div class="rating-label">安全性</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-stars">⭐⭐⭐⭐</div>
+                    <div class="rating-label">维护度</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 总结</h2>
+            <p>OpenCode 是一个<strong>功能强大且活跃</strong>的项目，但在<strong>内存管理</strong>和<strong>启动性能</strong>方面存在可靠性问题需要重点解决。</p>
+            <p style="margin-top: 15px;">建议在生产环境使用前注意监控内存使用。</p>
+        </div>
+
+        <footer>
+            <p>📅 分析日期: 2026-03-03</p>
+            <p>📊 数据来源: GitHub anomalyco/opencode</p>
+        </footer>
+    </div>
+</body>
+</html>

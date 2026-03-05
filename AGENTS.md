@@ -4,6 +4,10 @@
 - Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
 - Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
 
+## Documentation
+
+- System Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## Style Guide
 
 ### General Principles
